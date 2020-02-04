@@ -35,10 +35,10 @@ _标签_ 是附加到 Kubernetes 对象（比如 Pods）上的键值对。
 ```
 
 <!--
-We'll eventually index and reverse-index labels for efficient queries and watches, use them to sort and group in UIs and CLIs, etc. We don't want to pollute labels with non-identifying, especially large and/or structured, data. Non-identifying information should be recorded using [annotations](/docs/concepts/overview/working-with-objects/annotations/).
+Labels allow for efficient queries and watches and are ideal for use in UIs and CLIs. Non-identifying information should be recorded using [annotations](/docs/concepts/overview/working-with-objects/annotations/).
 -->
 
-我们最终将标签索引和反向索引，用于高效查询和监视，使用它们在 UI 和 CLI 中进行排序和分组等。我们不希望将非标识性的、尤其是大型或结构化数据用作标签，给后者带来污染。应使用 [注解](/docs/concepts/overview/working-with-objects/annotations/) 记录非识别信息
+标签可以进行有效的查询和监视，非常适合在UI和CLI中使用。我们不希望将非标识性的、尤其是大型或结构化数据用作标签，给后者带来污染。非识别信息应使用 [注解](/docs/concepts/overview/working-with-objects/annotations/) 做记录
 
 {{% /capture %}}
 
@@ -64,7 +64,7 @@ Service deployments and batch processing pipelines are often multi-dimensional e
 <!--
 Example labels:
 -->
-示例标签：
+标签示例：
 
    * `"release" : "stable"`, `"release" : "canary"`
    * `"environment" : "dev"`, `"environment" : "qa"`, `"environment" : "production"`
@@ -90,10 +90,31 @@ If the prefix is omitted, the label Key is presumed to be private to the user. A
 _标签_ 是键值对。有效的标签键有两个段：可选的前缀和名称，用斜杠（`/`）分隔。名称段是必需的，必须小于等于 63 个字符，以字母数字字符（`[a-z0-9A-Z]`）开头和结尾，带有破折号（`-`），下划线（`_`），点（ `.`）和之间的字母数字。前缀是可选的。如果指定，前缀必须是 DNS 子域：由点（`.`）分隔的一系列 DNS 标签，总共不超过 253 个字符，后跟斜杠（`/`）。
 如果省略前缀，则假定标签键对用户是私有的。 向最终用户对象添加标签的自动系统组件（例如 `kube-scheduler`，`kube-controller-manager`，`kube-apiserver`，`kubectl` 或其他第三方自动化）必须指定前缀。`kubernetes.io/` 前缀是为 Kubernetes 核心组件保留的。
 
+
 <!--
 Valid label values must be 63 characters or less and must be empty or begin and end with an alphanumeric character (`[a-z0-9A-Z]`) with dashes (`-`), underscores (`_`), dots (`.`), and alphanumerics between.
 -->
 有效标签值必须为 63 个字符或更少，并且必须为空或以字母数字字符（`[a-z0-9A-Z]`）开头和结尾，中间可以包含破折号（`-`）、下划线（`_`）、点（`.`）和字母或数字。
+
+<!--
+For example, here’s the configuration file for a Pod that has two labels environment: production and app: nginx :
+-->
+例如，这是一个Pod的配置文件，它包含了两个标签environment: production和app: nginx：
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: label-demo
+  labels:
+    environment: production
+    app: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.7.9
+    ports:
+    - containerPort: 80
+```
 
 <!--
 ## Label selectors
@@ -118,20 +139,25 @@ API 目前支持两种类型的选择器：_基于相等性的_ 和 _基于集�
 标签选择器可以由逗号分隔的多个 _需求_ 组成。在多个需求的情况下，必须满足所有要求，因此逗号分隔符充当逻辑 _与_（`&&`）运算符。
 
 <!--
-An empty label selector (that is, one with zero requirements) selects every object in the collection.
+The semantics of empty or non-specified selectors are dependent on the context,
+and API types that use selectors should document the validity and meaning of
+them.
 -->
-空标签选择器（即，需求为零的选择器）选择集合中的每个对象。
+空的或未指定的选择器的语义取决于上下文，和使用选择器的API类型应记录他们内容的有效性和含义
 
-<!--
-A null label selector (which is only possible for optional selector fields) selects no objects.
--->
-null 值的标签选择器（仅可用于可选选择器字段）不选择任何对象
 {{< note >}}
 <!--
-**Note**: the label selectors of two controllers must not overlap within a namespace, otherwise they will fight with each other.
+For some API types, such as ReplicaSets, the label selectors of two instances must not overlap within a namespace, or the controller can see that as conflicting instructions and fail to determine how many replicas should be present.
 -->
-**注意**：两个控制器的标签选择器不得在命名空间内重叠，否则它们将互相冲突。
+**注意**：对于某些API类型（例如ReplicaSets），两个实例的标签选择器不得在名称空间内重叠，否则控制器会将其视为冲突的指令，而无法确定应该存在多少个副本。
 {{< /note >}}
+
+{{< caution >}}
+<!--
+For both equality-based and set-based conditions there is no logical _OR_ (`||`) operator. Ensure your filter statements are structured accordingly.
+-->
+**警告**：对于基于相等和基于集合的条件，都没有逻辑_OR_（`||`）运算符。确保您的过滤器语句具有相应的结构。。
+{{< /caution >}}
 
 <!--
 ### _Equality-based_ requirement
